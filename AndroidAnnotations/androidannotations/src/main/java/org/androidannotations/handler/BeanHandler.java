@@ -21,17 +21,16 @@ import static org.androidannotations.helper.ModelConstants.GENERATION_SUFFIX;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 import org.androidannotations.annotations.Bean;
-import org.androidannotations.annotations.EBean;
 import org.androidannotations.annotations.NonConfigurationInstance;
 import org.androidannotations.api.CreatorFacade;
 import org.androidannotations.helper.TargetAnnotationHelper;
 import org.androidannotations.holder.EBeanHolder;
 import org.androidannotations.holder.EComponentHolder;
-import org.androidannotations.logger.Logger;
-import org.androidannotations.logger.LoggerFactory;
 import org.androidannotations.model.AnnotationElements;
 import org.androidannotations.process.IsValid;
 
@@ -55,7 +54,8 @@ public class BeanHandler extends BaseAnnotationHandler<EComponentHolder> {
 
 		validatorHelper.isNotPrivate(element, valid);
 
-		validatorHelper.typeOrTargetValueHasAnnotation(EBean.class, element, valid);
+		// validatorHelper.typeOrTargetValueHasAnnotation(EBean.class, element,
+		// valid);
 	}
 
 	@Override
@@ -73,34 +73,27 @@ public class BeanHandler extends BaseAnnotationHandler<EComponentHolder> {
 
 		JFieldRef beanField = ref(fieldName);
 		JBlock block = holder.getInitBody();
-		JClass injectedClass = processHolder.definedClass(typeQualifiedName);
-
-		JClass creatorFacade = refClass(CreatorFacade.class);
+		JClass injectedClass = processHolder.refClass(typeQualifiedName);
 
 		boolean hasNonConfigurationInstanceAnnotation = element.getAnnotation(NonConfigurationInstance.class) != null;
 		if (hasNonConfigurationInstanceAnnotation) {
 			block = block._if(beanField.eq(_null()))._then();
 		}
 
-		JInvocation getInstance;
-		Logger logger = LoggerFactory.getLogger(getClass());
-		logger.debug("BEGIN");
-		logger.debug("" + element);
-		logger.debug("" + holder);
-		logger.debug("" + injectedClass);
-		logger.debug("" + implicit);
-		logger.debug("" + injectedClass.isAbstract());
-		logger.debug("" + injectedClass.isInterface());
+		// Retrieve the element of the class's type field
+		Element fieldTypeElement = null;
+		if (elementType instanceof DeclaredType) {
+			fieldTypeElement = ((DeclaredType) elementType).asElement();
+		}
 
-		if (implicit && (injectedClass.isAbstract() || injectedClass.isInterface())) {
+		JInvocation getInstance;
+		if (implicit && fieldTypeElement != null && (annotationHelper.isAbstract(fieldTypeElement) || element instanceof TypeElement && annotationHelper.isInterface((TypeElement) element))) {
+			JClass creatorFacade = refClass(CreatorFacade.class);
 			getInstance = creatorFacade.staticInvoke("getBean").arg(injectedClass.dotclass()).arg(holder.getContextRef());
-			logger.debug("implicit");
 		} else {
-			logger.debug("explicit");
 			JClass injectedAAClass = refClass(typeQualifiedName + GENERATION_SUFFIX);
 			getInstance = injectedAAClass.staticInvoke(EBeanHolder.GET_INSTANCE_METHOD_NAME).arg(holder.getContextRef());
 		}
-		logger.debug("END");
 
 		block.assign(beanField, getInstance);
 	}
