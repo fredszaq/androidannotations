@@ -20,11 +20,13 @@ import static com.sun.codemodel.JExpr.ref;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 import org.androidannotations.annotations.Bean;
-import org.androidannotations.annotations.EBean;
 import org.androidannotations.annotations.NonConfigurationInstance;
+import org.androidannotations.api.CreatorFacade;
 import org.androidannotations.helper.TargetAnnotationHelper;
 import org.androidannotations.holder.EBeanHolder;
 import org.androidannotations.holder.EComponentHolder;
@@ -51,15 +53,18 @@ public class BeanHandler extends BaseAnnotationHandler<EComponentHolder> {
 
 		validatorHelper.isNotPrivate(element, valid);
 
-		validatorHelper.typeOrTargetValueHasAnnotation(EBean.class, element, valid);
+		// validatorHelper.typeOrTargetValueHasAnnotation(EBean.class, element,
+		// valid);
 	}
 
 	@Override
 	public void process(Element element, EComponentHolder holder) throws Exception {
 		TypeMirror typeMirror = annotationHelper.extractAnnotationClassParameter(element);
+		boolean implicit = false;
 		if (typeMirror == null) {
 			typeMirror = element.asType();
 			typeMirror = holder.processingEnvironment().getTypeUtils().erasure(typeMirror);
+			implicit = true;
 		}
 
 		String typeQualifiedName = typeMirror.toString();
@@ -74,7 +79,20 @@ public class BeanHandler extends BaseAnnotationHandler<EComponentHolder> {
 			block = block._if(beanField.eq(_null()))._then();
 		}
 
-		JInvocation getInstance = injectedClass.staticInvoke(EBeanHolder.GET_INSTANCE_METHOD_NAME).arg(holder.getContextRef());
+		// Retrieve the element of the class's type field
+		Element fieldTypeElement = null;
+		if (typeMirror instanceof DeclaredType) {
+			fieldTypeElement = ((DeclaredType) typeMirror).asElement();
+		}
+
+		JInvocation getInstance;
+		if (implicit && fieldTypeElement != null && (annotationHelper.isAbstract(fieldTypeElement) || element instanceof TypeElement && annotationHelper.isInterface((TypeElement) element))) {
+			JClass creatorFacade = refClass(CreatorFacade.class);
+			getInstance = creatorFacade.staticInvoke("getBean").arg(injectedClass.dotclass()).arg(holder.getContextRef());
+		} else {
+			getInstance = injectedClass.staticInvoke(EBeanHolder.GET_INSTANCE_METHOD_NAME).arg(holder.getContextRef());
+		}
+
 		block.assign(beanField, getInstance);
 	}
 }
