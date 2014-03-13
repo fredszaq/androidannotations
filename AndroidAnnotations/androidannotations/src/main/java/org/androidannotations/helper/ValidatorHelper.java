@@ -82,6 +82,7 @@ import org.androidannotations.annotations.sharedpreferences.DefaultInt;
 import org.androidannotations.annotations.sharedpreferences.DefaultLong;
 import org.androidannotations.annotations.sharedpreferences.DefaultString;
 import org.androidannotations.annotations.sharedpreferences.SharedPref;
+import org.androidannotations.api.CreatorFacade.Creator;
 import org.androidannotations.api.rest.RestClientErrorHandling;
 import org.androidannotations.api.rest.RestClientHeaders;
 import org.androidannotations.api.rest.RestClientRootUrl;
@@ -373,10 +374,8 @@ public class ValidatorHelper {
 
 	public void typeOrTargetValueHasAnnotation(Class<? extends Annotation> annotation, Element element, IsValid valid) {
 		DeclaredType targetAnnotationClassValue = annotationHelper.extractAnnotationClassParameter(element);
-
 		if (targetAnnotationClassValue != null) {
 			typeHasAnnotation(annotation, targetAnnotationClassValue, element, valid);
-
 			if (!annotationHelper.getTypeUtils().isAssignable(targetAnnotationClassValue, element.asType())) {
 				valid.invalidate();
 				annotationHelper.printAnnotationError(element, "The value of %s must be assignable into the annotated field");
@@ -384,6 +383,29 @@ public class ValidatorHelper {
 		} else {
 			typeHasAnnotation(annotation, element, valid);
 		}
+	}
+
+	public void targetValueHasAnnotationAndIsCompatible(Class<? extends Annotation> annotation, ExecutableElement element, IsValid valid) {
+		DeclaredType targetAnnotationClassValue = annotationHelper.extractAnnotationClassParameter(element);
+		if (targetAnnotationClassValue != null) {
+			typeHasAnnotation(annotation, targetAnnotationClassValue, element, valid);
+			if (annotationHelper.getTypeUtils().isAssignable(targetAnnotationClassValue, element.getReturnType())) {
+				return;
+			}
+		}
+		valid.invalidate();
+		annotationHelper.printAnnotationError(element, "The value of %s must be assignable into the annotated field");
+	}
+
+	public void methodTakesArgument(String argumentClass, ExecutableElement element, IsValid valid) {
+		DeclaredType targetAnnotationClassValue = annotationHelper.extractAnnotationClassParameter(element);
+		if (targetAnnotationClassValue != null) {
+			if (element.getParameters().size() == 1 && element.getParameters().get(0).asType().toString().equals(argumentClass)) {
+				return;
+			}
+		}
+		valid.invalidate();
+		annotationHelper.printAnnotationError(element, "The annotated method must take only a " + argumentClass + " as parameter");
 	}
 
 	private boolean elementHasAnnotationSafe(Class<? extends Annotation> annotation, Element element) {
@@ -579,6 +601,10 @@ public class ValidatorHelper {
 				annotationHelper.printAnnotationError(element, elementTypeMirror.toString() + " requires a constructor that takes only a " + daoWithTypedParameters.toString());
 			}
 		}
+	}
+
+	public void extendsCreator(Element element, IsValid valid) {
+		extendsType(element, Creator.class.getCanonicalName(), valid);
 	}
 
 	public void extendsListOfView(Element element, IsValid valid) {

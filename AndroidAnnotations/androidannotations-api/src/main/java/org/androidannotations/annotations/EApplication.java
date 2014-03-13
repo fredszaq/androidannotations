@@ -15,6 +15,8 @@
  */
 package org.androidannotations.annotations;
 
+import org.androidannotations.api.CreatorFacade;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -75,4 +77,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 public @interface EApplication {
+	Class<? extends CreatorFacade.Creator>[] creators() default {};
 }

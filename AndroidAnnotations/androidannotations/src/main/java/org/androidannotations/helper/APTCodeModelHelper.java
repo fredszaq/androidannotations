@@ -449,6 +449,12 @@ public class APTCodeModelHelper {
 			jmethod = holder.getGeneratedClass().method(JMod.PUBLIC, jcReturnType, method.getSimpleName().toString());
 			jmethod.annotate(Override.class);
 
+			// Create the type parameters.
+			List<? extends TypeParameterElement> typeParameters = method.getTypeParameters();
+			for (TypeParameterElement typeParameter : typeParameters) {
+				jmethod.generify(typeParameter.getSimpleName().toString());
+			}
+
 			// Create the parameters.
 			int paramMods = finalParams ? JMod.FINAL : JMod.NONE;
 			for (int i = 0; i < method.getParameters().size(); i++) {

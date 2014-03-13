@@ -21,8 +21,15 @@ import static com.sun.codemodel.JMod.PRIVATE;
 import static com.sun.codemodel.JMod.PUBLIC;
 import static com.sun.codemodel.JMod.STATIC;
 
-import javax.lang.model.element.TypeElement;
+import java.util.List;
 
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+
+import org.androidannotations.annotations.EApplication;
+import org.androidannotations.api.CreatorFacade;
+import org.androidannotations.helper.ModelConstants;
+import org.androidannotations.helper.TargetAnnotationHelper;
 import org.androidannotations.process.ProcessHolder;
 
 import com.sun.codemodel.JBlock;
@@ -38,8 +45,13 @@ public class EApplicationHolder extends EComponentHolder {
 
 	private JFieldVar staticInstanceField;
 
-	public EApplicationHolder(ProcessHolder processHolder, TypeElement annotatedElement) throws Exception {
+	private TargetAnnotationHelper annotationHelper;
+
+	public EApplicationHolder(ProcessHolder processHolder, TypeElement annotatedElement, TargetAnnotationHelper annotationHelper) throws Exception {
 		super(processHolder, annotatedElement);
+
+		this.annotationHelper = annotationHelper;
+
 		createSingleton();
 		createOnCreate();
 	}
@@ -63,6 +75,16 @@ public class EApplicationHolder extends EComponentHolder {
 		onCreate.annotate(Override.class);
 		JBlock onCreateBody = onCreate.body();
 		onCreateBody.assign(staticInstanceField, _this());
+		JClass creatorFacade = refClass(CreatorFacade.class);
+
+		List<DeclaredType> creators = annotationHelper.extractAnnotationClassArrayParameter(getAnnotatedElement(), EApplication.class.getCanonicalName(), "creators");
+
+		if (creators != null) {
+			for (DeclaredType creator : creators) {
+				onCreateBody.add(creatorFacade.staticInvoke("addCreator").arg(JExpr._new(refClass(creator + ModelConstants.GENERATION_SUFFIX))));
+			}
+		}
+
 		onCreateBody.invoke(getInit());
 		onCreateBody.invoke(_super(), onCreate);
 	}

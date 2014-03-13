@@ -117,6 +117,8 @@ public class AnnotationHandlers {
 		add(new HttpsClientHandler(processingEnvironment));
 		add(new HierarchyViewerSupportHandler(processingEnvironment));
 		add(new WindowFeatureHandler(processingEnvironment));
+		add(new ECreatorHandler(processingEnvironment));
+		add(new CreatesHandler(processingEnvironment));
 		new ReceiverHandler(processingEnvironment).register(this);
 		new ReceiverActionHandler(processingEnvironment).register(this);
 		new OnActivityResultHandler(processingEnvironment).register(this);

@@ -20,6 +20,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
 import org.androidannotations.annotations.EApplication;
+import org.androidannotations.helper.TargetAnnotationHelper;
 import org.androidannotations.holder.EApplicationHolder;
 import org.androidannotations.model.AnnotationElements;
 import org.androidannotations.process.IsValid;
@@ -27,13 +28,16 @@ import org.androidannotations.process.ProcessHolder;
 
 public class EApplicationHandler extends BaseGeneratingAnnotationHandler<EApplicationHolder> {
 
+	private TargetAnnotationHelper annotationHelper;
+
 	public EApplicationHandler(ProcessingEnvironment processingEnvironment) {
 		super(EApplication.class, processingEnvironment);
+		annotationHelper = new TargetAnnotationHelper(processingEnv, getTarget());
 	}
 
 	@Override
 	public EApplicationHolder createGeneratedClassHolder(ProcessHolder processHolder, TypeElement annotatedElement) throws Exception {
-		return new EApplicationHolder(processHolder, annotatedElement);
+		return new EApplicationHolder(processHolder, annotatedElement, annotationHelper);
 	}
 
 	@Override
@@ -43,6 +47,7 @@ public class EApplicationHandler extends BaseGeneratingAnnotationHandler<EApplic
 		validatorHelper.extendsApplication(element, valid);
 
 		validatorHelper.applicationRegistered(element, androidManifest, valid);
+
 	}
 
 	@Override
