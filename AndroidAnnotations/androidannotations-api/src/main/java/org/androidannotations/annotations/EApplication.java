@@ -70,4 +70,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 public @interface EApplication {
+	Class<?>[] creators() default {};
 }
