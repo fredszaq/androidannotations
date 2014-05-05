@@ -27,6 +27,9 @@ public class CreatorFacade {
 				throw new IllegalStateException("More than one creator for class " + clazz);
 			}
 		}
+		if (result == null) {
+			throw new IllegalStateException("No creator found for class " + clazz);
+		}
 		return result;
 	}
 
